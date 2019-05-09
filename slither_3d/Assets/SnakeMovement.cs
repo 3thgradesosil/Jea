@@ -16,8 +16,36 @@ public class SnakeMovement : MonoBehaviour
     {
         //InputRotation();
         MoveWithMouse();
+        spawnFood();
+
         
     }
+    public void spawnFood()
+    {
+        StartCoroutine("CallEveryXSeconds", spawnFoodEveryXSeconds);
+       
+    }
+    public float spawnFoodEveryXSeconds = 1;
+    public GameObject FoodPrefab;
+    IEnumerator CallEveryXSeconds(float x)
+    {
+        yield return new WaitForSecondsRealtime(x);
+        StopCoroutine("CallEveryXSeconds");
+        Vector3 randomFoodPos = new Vector3(Random.Range(
+                                                Random.Range(transform.position.x - 10, transform.position.x - 5),
+                                                Random.Range(transform.position.x + 5, transform.position.x + 10)
+                                            ),
+                                            Random.Range(
+                                                Random.Range(transform.position.y - 10, transform.position.y - 5),
+                                                Random.Range(transform.position.y + 5, transform.position.y + 10)), 0);
+
+        GameObject newFood = Instantiate(FoodPrefab, randomFoodPos, Quaternion.identity) as GameObject;
+        //GameObject foodParent = GameObject.Find("Foods");
+        //newFood.transform.parent = foodParent.transform;
+    }
+
+
+
     private Vector3 pointInWorld;
     private Vector3 Mouse_Pos;
     private float radius = 3.0f;
@@ -79,23 +107,75 @@ public class SnakeMovement : MonoBehaviour
         camera.position = Vector3.SmoothDamp(camera.position, 
            new Vector3(gameObject.transform.position.x,gameObject.transform.position.y, -10), ref cameraVelocity, smoothTime);
     }
+    private int Food_count;
+    private int current_Food;
+    public int[] growOnThisFood;
+    private Vector3 currentSize = Vector3.one;
+    public float growScale = 0.1f;
+    public float bodyPartOverTimeFollow = 0.19f;
+    bool SizeUp(int x)
+    {
+        try
+        {
+            if (x == growOnThisFood[current_Food])
+            {
+                current_Food++;
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }catch(System.Exception e)
+        {
+            return false;
+        }
+        //return false;
+    }
     public Transform bodyObject;
     private void OnCollisionEnter(Collision other)
     {
         if(other.transform.tag == "Food")
         {
             Destroy(other.gameObject);
-            if(BodyParts.Count == 0)
+            Food_count++;
+            if (!SizeUp(Food_count))
             {
-                Vector3 currentPos = transform.position;
-                Transform newBodyPart = Instantiate(bodyObject, currentPos, Quaternion.identity) as  Transform;
-                BodyParts.Add(newBodyPart);
+                if (BodyParts.Count == 0)
+                {
+                    Vector3 currentPos = transform.position;
+                    Transform newBodyPart = Instantiate(bodyObject, currentPos, Quaternion.identity) as Transform;
+
+
+                    newBodyPart.localScale = currentSize;
+                    newBodyPart.GetComponent<SnakeBody>().overTime = bodyPartOverTimeFollow;
+
+                    BodyParts.Add(newBodyPart);
+                }
+                else
+                {
+                    Vector3 currentPos = BodyParts[BodyParts.Count - 1].position;
+                    Transform newBodyPart = Instantiate(bodyObject, currentPos, Quaternion.identity) as Transform;
+
+
+
+                    newBodyPart.localScale = currentSize;
+                    newBodyPart.GetComponent<SnakeBody>().overTime = bodyPartOverTimeFollow;
+
+                    BodyParts.Add(newBodyPart);
+                }
             }
             else
             {
-                Vector3 currentPos = BodyParts[BodyParts.Count - 1].position;
-                Transform newBodyPart = Instantiate(bodyObject, currentPos, Quaternion.identity) as Transform;
-                BodyParts.Add(newBodyPart);
+                currentSize += Vector3.one * growScale;
+                bodyPartOverTimeFollow += 0.04f;
+                transform.localScale = currentSize; //headSize
+
+                foreach(Transform bodyPart_i in BodyParts)
+                {
+                    bodyPart_i.localScale = currentSize;
+                    bodyPart_i.GetComponent<SnakeBody>().overTime = bodyPartOverTimeFollow;
+                }
             }
         }
     }

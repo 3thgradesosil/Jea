@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class SnakeMovement : MonoBehaviour
 {
@@ -24,7 +25,7 @@ public class SnakeMovement : MonoBehaviour
     }
     public void spawnBomb()
     {
-        StartCoroutine("CallBombEveryXSeconds", 5);
+        StartCoroutine("CallBombEveryXSeconds", 3);
 
     }
     IEnumerator CallBombEveryXSeconds(float x)
@@ -238,14 +239,20 @@ public class SnakeMovement : MonoBehaviour
         }
         else if (other.transform.tag == "Bomb")
         {
-            Destroy(other.gameObject);
+            try
+            {
+                Destroy(other.gameObject);
             int lastIndex = BodyParts.Count - 1;
             Transform lastBodyPart = BodyParts[lastIndex].transform;
 
-            Instantiate(FoodPrefab, lastBodyPart.position, Quaternion.identity);
-
-            BodyParts.RemoveAt(lastIndex);
-            Destroy(lastBodyPart.gameObject);
+            //Instantiate(FoodPrefab, lastBodyPart.position, Quaternion.identity);
+            
+                BodyParts.RemoveAt(lastIndex);
+                Destroy(lastBodyPart.gameObject);
+            }catch(System.Exception e)
+            {
+                SceneManager.LoadScene("EndGame");
+            }
         }
     }
 
